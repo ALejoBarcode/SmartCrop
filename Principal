@@ -1,0 +1,104 @@
+/*
+Programación del proyecto 
+
+*/
+
+#include "max6675.h"
+#include "DHT.h"
+
+/////////////////////////Variables Bomba//////////////////////////////////////////////
+
+const int Bomba_PIN = 4; //PIN BOMBA
+String StadoBomba = "Apagado";
+
+/////////////////////////Variables Ultrasónico//////////////////////////////////////////////
+
+const int trigPin = 18;
+const int echoPin = 5;
+long tiempo;
+float Dist_cm;
+String StadoNivel = "Sin iniciar";
+
+//Constantes cm/uS
+#define Vel_sonido 0.034  //Velocidad del sonico
+#define To_cm 0.393701    //Conversor
+
+
+/////////////////////////Variables DHT//////////////////////////////////////////////
+
+#define DHTPIN 26 
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+/////////////////////////Variables Termocupla//////////////////////////////////////////////
+
+int thermoDO = 12;
+int thermoCS = 27;
+int thermoCLK = 14;
+
+MAX6675 thermocouple(thermoCLK, thermoCS, thermoDO);
+
+/////////////////////////Variables Humedad tierra//////////////////////////////////////////////
+
+int Humedad_Tierra,Analog_HT;
+const int Sensor_HTPIN = 33;
+int Set_HumedadTierra = 40;
+int Tiempo_riegoS = 15000;
+int Tiempo_EsperaS = 10000;
+int Tiempo_riegoR;
+int Tiempo_EsperaR;
+int S;
+#define SOIL_MOISTURE_PIN 25
+
+/////////////////////////Variables Tiempos//////////////////////////////////////////////
+//Configuraciones de tiempos - S-> SETPOINT - R-> Resta
+unsigned long tiempo1S = 1000;
+unsigned long tiempo2S = 0;
+unsigned long tiempo3S = 0;
+
+unsigned long tiempo1R = 0;
+unsigned long tiempo2R = 0;
+unsigned long tiempo3R = 0;
+unsigned long tiempoR = 0;  //reloj
+
+
+
+void setup() {
+  Serial.begin(115200);
+
+  //Configuración de ultrasonido
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+  //Configuración bomba
+  pinMode(Bomba_PIN, OUTPUT);  
+
+  //Inicializar tiempos
+  tiempo1R = millis();
+  //Define el sensor soil como entrada
+    pinMode(SOIL_MOISTURE_PIN, INPUT);
+  // Inicializar DHT
+  dht.begin();
+}
+
+void loop() {
+  tiempoR = millis();
+  if (tiempoR > tiempo1R) {
+    Ultrasonido();
+    Temperatura();
+    HumedadTierra();
+    Ambiente();    
+    tiempo1R = millis() + tiempo1S;
+    // imprimir datos
+    Serial.println("Nivel tanque\t : "  + String(Dist_cm) + " cm");
+    Serial.println("Tem. Tierra \t : " +  String(thermocouple.readCelsius()) + " °C");
+    Serial.println("Hum. Tierra \t : " +  String(Humedad_Tierra) + " %");
+    Serial.println("Estado Bomba \t : " + StadoBomba);
+    Serial.println("Estado Tanque \t : " + StadoNivel);
+    
+    Serial.println(); 
+ 
+  }
+
+  delay(10);
+}
