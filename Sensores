@@ -1,0 +1,83 @@
+void Ultrasonido() {
+  //Desactivar pulso
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  //Iniciar medición
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+
+  //leer pulso
+  tiempo = pulseIn(echoPin, HIGH);
+
+  // Calcular distancia
+  Dist_cm = (((-(tiempo * Vel_sonido / 2) + 30)*120)-13)/100;
+}
+
+void Temperatura() {
+
+  //Serial.println(thermocouple.readCelsius());
+  //Serial.println(thermocouple.readFahrenheit());
+}
+
+void HumedadTierra() {
+    // Leer el valor analógico del sensor
+  int  Humedad_Tierra1 = analogRead(SOIL_MOISTURE_PIN);
+
+  // Ajuste del mapeo según el rango específico de tu sensor
+  Humedad_Tierra = map(Humedad_Tierra1, 1800, 3500, 100, 0);
+  if (Dist_cm > 5 & Dist_cm < 25 ) {
+    if(Dist_cm < 10) {
+      StadoNivel="Bajo";
+    }
+    else{
+      StadoNivel = "Adecuado";    
+    }
+    if (Humedad_Tierra < Set_HumedadTierra & S == 0) {
+      digitalWrite(Bomba_PIN, 1);
+      StadoBomba = "Prendido";
+      Tiempo_riegoR = millis() + Tiempo_riegoS;
+      S = 1;
+    }
+    if ((Humedad_Tierra > Set_HumedadTierra + 5 || tiempoR > Tiempo_riegoR) & S == 1) {
+      digitalWrite(Bomba_PIN, 0);
+      StadoBomba = "Apagado";
+      Tiempo_EsperaR = millis() + Tiempo_EsperaS;
+      S = 2;
+    }
+    if (tiempoR > Tiempo_EsperaR & S == 2) {
+      S = 0;
+    }
+  }
+  else if(Dist_cm > 25) {
+    StadoNivel="Muy alto";
+  }
+  else {
+    StadoNivel="Muy Bajo";
+    digitalWrite(Bomba_PIN, 0);
+    StadoBomba = "Apagado";
+  }
+}
+
+void Ambiente(){
+  float h = dht.readHumidity();
+  // Read temperature as Celsius (the default)
+  float t = dht.readTemperature();
+
+  // Check if any reads failed and exit early (to try again).
+  if (isnan(h) || isnan(t)) {
+    Serial.println(F("Failed to read from DHT sensor!"));
+    return;
+  }
+
+  // Compute heat index in Celsius (isFahreheit = false)
+  float hic = dht.computeHeatIndex(t, h, false);
+
+  Serial.print(F("Humidity: "));
+  Serial.print(h);
+  Serial.print(F("%  Temperature: "));
+  Serial.print(t);
+  Serial.print(F("°C "));
+  Serial.print(hic);
+  Serial.print(F("°C "));
+}
